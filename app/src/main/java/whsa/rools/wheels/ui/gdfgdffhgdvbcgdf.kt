@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
@@ -97,6 +98,8 @@ private class StartingDataManager(private val context: Context) {
     }
 
     private val data = appsFlyer.combine(facebookData) { it1, it2 ->
+        Log.e("AppsFlyer", "${(it1 as? DataWrapper.Data)?.value}")
+        Log.e("Deeplink", "${(it2 as? DataWrapper.Data)?.value}")
         Pair(it1, it2)
     }
 
@@ -164,6 +167,7 @@ private class StartingDataManager(private val context: Context) {
                     }
                 }
             }.build()
+            Log.e("URL", url.toString())
             url.toString()
         }
 
