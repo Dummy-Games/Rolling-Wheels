@@ -29,22 +29,27 @@ private const val URL_VALUE = "https://trident.website/w4STvgFP"
 @SuppressLint("CustomSplashScreen")
 class gdfgdffhgdvbcgdf : Fragment(R.layout.fgffdhdfgbvf) {
 
+    private val startingDataManager by lazy { StartingDataManager(requireContext()) }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        lifecycleScope.launch(Dispatchers.Main) {
-            delay(10_000L)
-            findNavController().navigate(
-                R.id.startingFragment, null,
-                navOptions {
-                    popUpTo(R.id.nav_graph) {
-                        inclusive = true
-                    }
+        startingDataManager.isPlainUser.flatMapLatest { isUser ->
+            if (isUser) {
+                startingDataManager.url.onEach {
+                    startWebViewActivity(it)
                 }
-            )
-        }
-        StartingDataManager(requireContext()).url.onEach {
-            startWebViewActivity(it)
+            } else {
+                findNavController().navigate(
+                    R.id.startingFragment, null,
+                    navOptions {
+                        popUpTo(R.id.nav_graph) {
+                            inclusive = true
+                        }
+                    }
+                )
+                flow { }
+            }
         }.launchIn(lifecycleScope + Dispatchers.IO)
     }
 
@@ -68,6 +73,11 @@ private sealed interface DataWrapper<out T> {
 }
 
 private class StartingDataManager(private val context: Context) {
+
+    val isPlainUser = flow {
+        emit(true)
+    }
+
     private val appsFlyer =
         MutableStateFlow<DataWrapper<MutableMap<String, Any>?>>(DataWrapper.Starting)
     private var facebookData = MutableStateFlow<DataWrapper<String?>>(
