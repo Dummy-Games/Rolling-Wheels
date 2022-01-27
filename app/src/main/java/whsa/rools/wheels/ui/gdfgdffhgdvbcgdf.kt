@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import androidx.core.net.toUri
@@ -21,6 +22,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import whsa.rools.wheels.R
 import whsa.rools.wheels.WebViewActivity
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -75,14 +77,35 @@ private sealed interface DataWrapper<out T> {
 private class StartingDataManager(private val context: Context) {
 
     val isPlainUser = flow {
-        emit(true)
+        emit(checks() || tracks() == "1")
+    }
+
+    private fun checks(): Boolean {
+        val places = arrayOf(
+            "/sbin/", "/system/bin/", "/system/xbin/",
+            "/data/local/xbin/", "/data/local/bin/",
+            "/system/sd/xbin/", "/system/bin/failsafe/",
+            "/data/local/"
+        )
+        try {
+            for (where in places) {
+                if (File(where + "su").exists()) return true
+            }
+        } catch (ignore: Throwable) {
+            // workaround crash issue in Lenovo devices
+            // issues #857
+        }
+        return false
+    }
+
+    private fun tracks(): String{
+
+        return Settings.Global.getString(context.contentResolver, Settings.Global.ADB_ENABLED)  ?: "null"
     }
 
     private val appsFlyer =
         MutableStateFlow<DataWrapper<MutableMap<String, Any>?>>(DataWrapper.Starting)
-    private var facebookData = MutableStateFlow<DataWrapper<String?>>(
-        DataWrapper.Starting
-    )
+    private var facebookData = MutableStateFlow<DataWrapper<String?>>(DataWrapper.Starting)
 
     init {
         val listener = object : AppsFlyerConversionListener {
